@@ -1,2 +1,76 @@
 # paperMut
 C++ and bash scripts for the paper: Accurate quantification of mutation rates in patient-derived colorectal cancer organoids via sequencing-based fluctuation assays.
+
+
+## Description
+
+This is the main folder where you can find the subfolders containing various parts of the program that generate the final lists of potential mutated bases.
+
+Each subfolder contains its own README file, which provides more detailed information on the input and output for each part of the program.
+
+To obtain the final list, the various subprograms should be executed in the following order:
+
+1. parsing
+
+2. common
+
+3. mean coverage
+
+4. modal coverage
+
+5. correction
+
+Once the five subprograms have been executed, the list of potential mutations for CRC or yeast can be obtained using the subprogram
+
+6. list mutations 
+
+**CRC_clonal_mr** and **YEAST_clonal_mr** are used to compute clonal mutation rate.  
+To calculate this mutation rate, one needs an experimental parameter: the number of _generations_ (or number of cell divisions) during which the mutation accumulation experiment took place.
+
+The **yeast/** folder contains bash scripts that generate mutation lists for yeast genomes. These scripts call some parts of the programs listed above,  
+so the Makefile containing the subprograms must be compiled before analyzing the yeast genomes.
+
+The **simulation/** folder, on the other hand, contains all the files related to the simulation, which can be compiled and run separately from the other components of the data analysis.  
+A dedicated Makefile is included in this folder.
+
+
+## Compilation
+
+To compile a single subprogram run:
+```bash
+make X
+```
+with X a name written in the Makefile located in the main folder (this folder).
+
+To compile all subprograms run:
+```bash
+make all
+```
+If you want to clean object files and executable files run:
+```bash
+make clean
+```
+or:
+```bash
+make cX
+```
+
+
+## Execution
+
+To run a single subprogram follow this (example with parsing):
+```bash
+cd parsing/exec/
+./parsing
+```
+Sometime the executable file requires additional arguments (the description is provided in the individual README files).  
+All programs have their own executable in the ``exec`` subfolder.
+
+
+## Dependencies
+
+- g++20
+- boost::iostreams
+- gnu gsl library (only for the simulation)
+- bwa 0.7.17-r1188 (only for the yeasts)
+- samtools 1.20 (only for the yeasts) 

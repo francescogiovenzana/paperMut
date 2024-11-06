@@ -6,5 +6,5 @@ mean_coverage/obj
 YEAST_clonal_mr/obj
 simulation/obj
 modal_coverage/obj
-counts/obj
+correction/obj
 

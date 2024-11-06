@@ -8,11 +8,11 @@ CXXFLAGS:=-Wall -O3 -lz -lboost_iostreams
 CPPFLAGS:=
 LDFLAGS:=-lz -lboost_iostreams
 
-.PHONY: all parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap counts counts_split correction correction_yeast
+.PHONY: all parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap correction correction_yeast
 
-all: parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap counts counts_split correction correction_yeast
+all: parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap correction correction_yeast
 
-clean: cparsing cparsing_yeast ccommon cmean_coverage cmodal_coverage clist_mut clist_mut_yeast cmut_rate_clonal cmut_rate_clonal_yeast cmut_rate_clonal_yeast_hap ccounts ccounts_split ccorrection ccorrection_yeast
+clean: cparsing cparsing_yeast ccommon cmean_coverage cmodal_coverage clist_mut clist_mut_yeast cmut_rate_clonal cmut_rate_clonal_yeast cmut_rate_clonal_yeast_hap ccorrection ccorrection_yeast
 
 #Parsing
 parsing: parsing/exec/parsing
@@ -154,58 +154,30 @@ cmut_rate_clonal_yeast_hap:
 	rm -f YEAST_clonal_mr/obj/clonal_hap.o
 	rm -f YEAST_clonal_mr/exec/clonal_hap
 
-#counts
-counts: counts/exec/counts
-
-counts/exec/counts: counts/obj/counts.o
-	${LD} $^ -o $@
-
-counts/obj/counts.o: counts/src/counts.cpp
-	mkdir -p counts/obj
-	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
-
-ccounts:
-	rm -f counts/obj/counts.o
-	rm -f counts/exec/counts
-
-#splitted counts forward reverse
-counts_split: counts/exec/counts_split_forward_reverse
-
-counts/exec/counts_split_forward_reverse: counts/obj/counts_split_forward_reverse.o
-	${LD} $^ -o $@
-
-counts/obj/counts_split_forward_reverse.o: counts/src/counts_split_forward_reverse.cpp
-	mkdir -p counts/obj
-	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
-
-ccounts_split:
-	rm -f counts/obj/counts_split_forward_reverse.o
-	rm -f counts/exec/counts_split_forward_reverse
-
 #corrections
-correction: counts/exec/correction
+correction: correction/exec/correction
 
-counts/exec/correction: counts/obj/correction.o
+correction/exec/correction: correction/obj/correction.o
 	${LD} $^ -o $@
 
-counts/obj/correction.o: counts/src/correction.cpp
-	mkdir -p counts/obj
+correction/obj/correction.o: correction/src/correction.cpp
+	mkdir -p correction/obj
 	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
 
 ccorrection:
-	rm -f counts/obj/correction.o
-	rm -f counts/exec/correction
+	rm -f correction/obj/correction.o
+	rm -f correction/exec/correction
 
 #corrections yeasts
-correction_yeast: counts/exec/correction_yeast
+correction_yeast: correction/exec/correction_yeast
 
-counts/exec/correction_yeast: counts/obj/correction_yeast.o
+correction/exec/correction_yeast: correction/obj/correction_yeast.o
 	${LD} $^ -o $@
 
-counts/obj/correction_yeast.o: counts/src/correction_yeast.cpp
-	mkdir -p counts/obj
+correction/obj/correction_yeast.o: correction/src/correction_yeast.cpp
+	mkdir -p correction/obj
 	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
 
 ccorrection_yeast:
-	rm -f counts/obj/correction_yeast.o
-	rm -f counts/exec/correction_yeast
+	rm -f correction/obj/correction_yeast.o
+	rm -f correction/exec/correction_yeast
