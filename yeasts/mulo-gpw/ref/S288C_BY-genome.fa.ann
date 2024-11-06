@@ -1,0 +1,35 @@
+12157105 17 11
+0 chrI [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=I]
+0 230218 0
+0 chrII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=II]
+230218 813184 0
+0 chrIII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=III]
+1043402 316620 0
+0 chrIV [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=IV]
+1360022 1531933 0
+0 chrV [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=V]
+2891955 576874 0
+0 chrVI [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=VI]
+3468829 270161 0
+0 chrVII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=VII]
+3738990 1090940 0
+0 chrVIII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=VIII]
+4829930 562643 0
+0 chrIX [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=IX]
+5392573 439888 0
+0 chrX [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=X]
+5832461 745751 0
+0 chrXI [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XI]
+6578212 666816 0
+0 chrXII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XII]
+7245028 1078177 0
+0 chrXIII [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XIII]
+8323205 924431 0
+0 chrXIV [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XIV]
+9247636 784333 0
+0 chrXV [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XV]
+10031969 1091291 0
+0 chrXVI [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [chromosome=XVI]
+11123260 948066 0
+0 chrMT [org=Saccharomyces cerevisiae] [strain=S288C] [moltype=genomic] [location=mitochondrion] [top=circular]
+12071326 85779 0
