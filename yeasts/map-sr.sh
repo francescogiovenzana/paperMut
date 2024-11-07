@@ -7,7 +7,7 @@
 ## settings  ------------------------------------------------------------------
 
 #full_dir=$(cd $(dirname "${0}") && pwd)
-base_dir=$(cd "mulo-gpw" && pwd)
+base_dir=$(cd "data" && pwd)
 #base_dir=$(dirname "${full_dir}")
 n_threads=4
 pll_runs=4

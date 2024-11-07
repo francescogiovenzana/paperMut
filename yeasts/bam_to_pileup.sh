@@ -5,7 +5,7 @@
 seq_type="${1}" #es : control or evolved
 mut_type="${2}" #es : msh2_BYBY 
 
-base_dir=$(cd "mulo-gpw" && pwd)
+base_dir=$(cd "data" && pwd)
 
 cd "${base_dir}"
 

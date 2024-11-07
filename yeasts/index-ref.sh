@@ -7,7 +7,7 @@
 ## settings  ------------------------------------------------------------------
 
 #full_dir=$(cd $(dirname "${0}") && pwd)
-full_dir=$(cd "mulo-gpw" && pwd)
+full_dir=$(cd "data" && pwd)
 #base_dir=$(dirname "${full_dir}")
 #rep_dir="${base_dir}/rep"
 rep_dir="${full_dir}/rep"

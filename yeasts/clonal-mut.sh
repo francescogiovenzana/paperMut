@@ -5,7 +5,7 @@ path_exec="${2}"
 n_gen="1000"
 ploidy=2
 
-base_dir=$(cd "mulo-gpw/pileup/common/${ref_name}" && pwd)
+base_dir=$(cd "data/pileup/common/${ref_name}" && pwd)
 
 cd "${base_dir}"
 

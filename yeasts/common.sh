@@ -3,7 +3,7 @@
 ref_name="${1}" #es : msh2_BYBY
 path_exec="${2}"
 
-base_dir=$(cd "mulo-gpw/pileup" && pwd)
+base_dir=$(cd "data/pileup" && pwd)
 
 out_dir="common/${ref_name}"
 

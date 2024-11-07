@@ -4,9 +4,9 @@ ref_type="${1}"  #es : control or evolved
 ref_name="${2}"  #es : msh2_BYBY 
 path_exec="${3}" #exec path for parsing progrma
 
-base_dir=$(cd "mulo-gpw/pileup/${ref_type}" && pwd)
+base_dir=$(cd "data/pileup/${ref_type}" && pwd)
 
-out_dir="mulo-gpw/pileup/${ref_type}/${ref_name}"
+out_dir="data/pileup/${ref_type}/${ref_name}"
 
 [[ -d "${out_dir}" ]] || mkdir -p "${out_dir}"
 

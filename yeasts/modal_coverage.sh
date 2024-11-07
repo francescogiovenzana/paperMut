@@ -4,7 +4,7 @@ ref_name="${1}" #es : msh2_BYBY
 path_exec="${2}"
 max_thr="1000"
 
-base_dir=$(cd "mulo-gpw/pileup/common/${ref_name}" && pwd)
+base_dir=$(cd "data/pileup/common/${ref_name}" && pwd)
 
 cd "${base_dir}"
 
