@@ -12,11 +12,13 @@ Input ``modal_coverage``:
 
 A txt file (example of an output):
 
-``
+---
+
 66 --> the modal coverage of a single dataset  
 
 21767122 --> the number of bases with that coverage  
-``
+
+---
 
 
 

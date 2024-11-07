@@ -14,11 +14,13 @@ ensuring that the standard deviation is not too large.
 
 A txt file (example of an output):
 
-``
+---
+
 65.8964 --> mean coverage  
 
 14.1532 --> std dev  
-``
+
+---
 
 
 
