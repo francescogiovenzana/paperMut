@@ -14,9 +14,9 @@ ensuring that the standard deviation is not too large.
 
 A txt file (example of an output):
 
-``
-65.8964 &rarr mean coverage
-14.1532 &rarr 1 std dev
-``
+65.8964 &rarr mean coverage  
+
+14.1532 &rarr 1 std dev  
+
 
 

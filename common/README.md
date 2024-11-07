@@ -4,8 +4,6 @@ Common takes ancestor and endpoint file for a specific CRC or yeast and it only 
 
 ## Input
 
-Input: 
-
 1. the path of the input file pseudopileup.dat of the ancestor
 2. the path of the input file pseudopileup.dat of the endpoint
 3. the path of the output file pseudopileup.dat of the common lines in the ancestor
