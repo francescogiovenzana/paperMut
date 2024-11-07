@@ -16,7 +16,7 @@ int main (int argc, char* argv[])
   
   if (argc != 4)
   {
-    std::cout << "Use: " << argv[0] << " [[ancestor|endpoint].dat]  [[ancestor|endpoint].dat]  [max_threshold]" << std::endl; 
+    std::cout << "Use: " << argv[0] << " [path [ancestor|endpoint]_pseudopileup.dat]  [path [ancestor|endpoint]_mean_coverage.dat]  [max threshold]" << std::endl; 
     return 1;
   }
 
