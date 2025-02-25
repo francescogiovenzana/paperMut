@@ -15,8 +15,9 @@
 #include <string>
 #include <type_traits>
 #include <random>
+#include <filesystem> // FG 24/02/25 -- in order to make it compatible with WSL
 /////////////////////////////
-#include "random.h"
+#include "../random/random.h"
 #include "XoshiroCpp.hpp"
 
 //gnu gsl library
@@ -24,6 +25,16 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_math.h>
 //
+//#include<math.h>
+//#include
+
+// Define SEED and S_DIR if not passed as macros
+std::string curr_path = std::filesystem::current_path(); // FG 24/02/25 Adding absolute path
+const std::string SEED = curr_path + "/../seed"; 
+const std::string S_DIR = curr_path + "/../output";
+
+//const std::string SEED = curr_path + "../seed"; 
+//const std::string S_DIR = curr_path + "../output";
 
 template <typename T> struct Node {
   T data;
@@ -54,7 +65,7 @@ public:
        size_t coverage,
        size_t ploidy,
        size_t n_zero):
-       rnd(SEED "/Primes", SEED "/seed.in"),
+       rnd(SEED + "/Primes", SEED + "/seed.in"),
        tree{tree},
        death_probability{death_probability}, 
        seq_error{seq_error},
@@ -527,6 +538,10 @@ public:
         //count_mutations += 1;
         //std::cout << "True frequency = " << frequency << std::endl;
       }
+      // Test print: --implem FG 21/02/25
+      //if (i%10 == 0) {
+      //  std::cout << "i =" << i << std::endl;
+      //}
     }
   }
 
