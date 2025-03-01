@@ -2,14 +2,10 @@
 List mutations returns the list of the possible mutations for a particular CRC or yeast genome.
 
 ## Input
-In the **list_mutations/exec/** folder, there are two files:  
-- one to compute the list of mutations of CRC (colorectal cancer) genomes (**list_mutations**),
-- one to compute the list of mutations of yeast genomes (**list_mutations_yeast**).
+In the **list_mutations/exec/** folder, there is one file to extract the list of possible mutations of CRC and yeast genomes:  
+- **list_mutations**
 
-I divided the two cases because for CRC, we imposed an additional threshold on the minimum coverage  
-since these datasets are affected by more noise.
-
-The input values are the same for each executable:
+The input values are:
 
 1. the path of the ancestor with common lines,
 2. the path of the endpoint with common lines,
@@ -18,8 +14,7 @@ The input values are the same for each executable:
 5. standard dev of the ancestor,
 6. modal coverage of the endpoint,
 7. standard dev of the endpoint,
-8. ploidy,
-9. the number of bases for Bonferroni correction.
+8. copy number.
 
 ## Output
 
@@ -60,7 +55,7 @@ where
 
 - first column is the total coverage
 - second column is the number of mutations 
-- third column is the ploidy
+- third column is the copy number
 
 The second txt file is called ``file_no_mutations_pX.dat``, with ``X`` equals the ploidy of the dataset.
 This file contains the final number of non-mutated bases.

@@ -13,63 +13,71 @@
 
 using namespace std::chrono;
 
+bool balanced(std::string base_mutation,
+               std::string ref_A, std::string ref_G, std::string ref_C, std::string ref_T,
+               std::string A_s, std::string a_s, std::string G_s, std::string g_s,
+               std::string C_s, std::string c_s, std::string T_s, std::string t_s);
+
 bool balanced_tot(std::string A_count, std::string G_count, std::string C_count, std::string T_count,
                   std::string a_count, std::string g_count, std::string c_count, std::string t_count);
+
 int rounded(double val);
-bool same_reeds(std::string A_count, std::string G_count, 
-                std::string C_count, std::string T_count,
-                std::string a_count, std::string g_count, 
-                std::string c_count, std::string t_count, 
-                int total_coverage);
-///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 double binomial_probability(int n, int m);
 double binomial_p_value(int N, int Nm);
 
+std::pair<bool, std::string> same_reeds(std::string A_count, std::string G_count,
+                                         std::string C_count, std::string T_count,
+                                         std::string a_count, std::string g_count,
+                                         std::string c_count, std::string t_count,
+                                         int total_coverage);
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int main (int argc, char* argv[])
 {
-  constexpr double mutation_thr_ancestor = 0.0;
-  const int fix_min_cov = 30;
+  //constexpr double mutation_thr_ancestor = 0.0;
+  //int fix_min_cov = 0;
   //core variables
   int coverage_thr_ancestor = 0;
-  int std_dev_cov_ancestor = 0;
+  int std_dev_cov_ancestor1 = 0;
+  int std_dev_cov_ancestor2 = 0;
   int max_cov_a = 0;
   int min_cov_a = 0;
   int coverage_thr_endpoint = 0;
-  int std_dev_cov_endpoint = 0;
-  int max_cov = 0;
-  int min_cov = 0;
+  int std_dev_cov_endpoint1 = 0;
+  int std_dev_cov_endpoint2 = 0;
+  int max_cov_e = 0;
+  int min_cov_e = 0;
 
-  if (argc != 10)
+  if (argc != 9)
   {
-    std::cout << "Use: " << argv[0] << " [common_lines_control.dat]  [common_lines_evolved.dat]  [output_path]  [coverage_ancestor_modal]  [coverage_ancestor_std_dev]  [coverage_endpoint_modal]  [coverage_endpoint_std_dev]  [copy_number]  [L1]" << std::endl; 
+    std::cout << "Use: " << argv[0] << " [common_lines_control.dat]  [common_lines_evolved.dat]  [output_path]  [coverage_ancestor_modal]  [coverage_ancestor_std_dev]  [coverage_endpoint_modal]  [coverage_endpoint_std_dev]  [copy_number]" << std::endl; 
     return 1;
   }
 
-  std::ofstream file_reeds_p2(std::string{argv[3]}+"file_reeds_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
-  if (!file_reeds_p2.is_open())
+  std::ofstream file_reeds_p(std::string{argv[3]}+"file_reeds_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
+  if (!file_reeds_p.is_open())
   {
     std::cerr << "File file_reeds.dat not opened. Exit" << std::endl;
     return 1;
   }
 
-  std::ofstream file_sel_p2(std::string{argv[3]}+"file_no_mutations_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
-  if (!file_sel_p2.is_open())
+  std::ofstream file_sel_p(std::string{argv[3]}+"file_no_mutations_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
+  if (!file_sel_p.is_open())
   {
     std::cerr << "File file_no_mutations.dat not opened. Exit" << std::endl;
     return 1;
   }
 
-  std::ofstream file_sel_pre(std::string{argv[3]}+"file_bases_pre_ancestor_pvalue_filter_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
-  if (!file_sel_p2.is_open())
+  std::ofstream file_nb(std::string{argv[3]}+"n_no_balanced_mut_p"+std::string{argv[8]}+".dat", std::ios_base::binary);
+  if (!file_nb.is_open())
   {
-    std::cerr << "File file_pre_filter.dat not opened. Exit" << std::endl;
+    std::cerr << "File n_no_balanced_mut.dat not opened. Exit" << std::endl;
     return 1;
   }
 
+
   /////////////////////////////////////////////////////////////////////////////////////////////////////
-  size_t sel_bases_pre_filter = 0;
-  size_t selected_bases_p2 = 0;
-  size_t n_bases_ploidy2_mut = 0;
 
   auto start_timer = high_resolution_clock::now(); //reference base 
   std::string A_s = "A"; 
@@ -113,7 +121,7 @@ int main (int argc, char* argv[])
   int ancestor_coverage = 0;
   int ancestor_forward = 0;
   int ancestor_reverse = 0;
-  double ancestor_mut_freq = 0.0;
+  //double ancestor_mut_freq = 0.0;
 
 
   std::ifstream in_file_ancestor(std::string{argv[1]}, std::ios_base::binary);
@@ -130,36 +138,36 @@ int main (int argc, char* argv[])
     return 1;
   }
 
+  //fix_min_cov = std::stoi(argv[10]); 
+  //int min_thr = fix_min_cov * static_cast<int>(ploidy_end);
+  //double L1 = std::stod(argv[9]);
+  //double alpha1 = 0.05/L1;
+
+  size_t n_mut_ploidy_nb = 0;
+  size_t selected_bases_p = 0;
+  size_t n_bases_ploidy_mut = 0;
+
   double ploidy_end = std::stod(argv[8]);
-  int min_thr = fix_min_cov * static_cast<int>(ploidy_end);
-  double L1 = std::stod(argv[9]);
-  //double L2 = std::stod(argv[10]);
-  double alpha1 = 0.05/L1;
-  //double alpha2 = 0.05 / L2;
   coverage_thr_ancestor = rounded(std::stod(argv[4]));
-  std_dev_cov_ancestor = rounded(std::stod(argv[5]));
-  min_cov_a = coverage_thr_ancestor - std_dev_cov_ancestor;
-  max_cov_a = coverage_thr_ancestor + std_dev_cov_ancestor;
+  std_dev_cov_ancestor1 = rounded(std::stod(argv[5]));
+  std_dev_cov_ancestor2 = rounded(std::stod(argv[5]));
+  min_cov_a = coverage_thr_ancestor - std_dev_cov_ancestor1;
+  max_cov_a = coverage_thr_ancestor + std_dev_cov_ancestor2;
+
   coverage_thr_endpoint = rounded(std::stod(argv[6]));
-  std_dev_cov_endpoint = rounded(std::stod(argv[7]));
-  min_cov = coverage_thr_endpoint - std_dev_cov_endpoint;
-  max_cov = coverage_thr_endpoint + std_dev_cov_endpoint;
+  std_dev_cov_endpoint1 = rounded(std::stod(argv[7]));
+  std_dev_cov_endpoint2 = rounded(std::stod(argv[7]));
+  min_cov_e = coverage_thr_endpoint - std_dev_cov_endpoint1;
+  max_cov_e = coverage_thr_endpoint + std_dev_cov_endpoint2;
   ///////////////////////////////////////////////////////////////////////
 
   std::cout << "PLOIDY = " << ploidy_end << std::endl;
   std::cout << "Modal coverage ancestor = " << coverage_thr_ancestor << std::endl;
-  std::cout << "STD coverage ancestor = " << std_dev_cov_ancestor << std::endl;
   std::cout << "Min coverage ancestor = " << min_cov_a << std::endl;
   std::cout << "Max coverage ancestor = " << max_cov_a << std::endl;
   std::cout << "Modal coverage endpoint = " << coverage_thr_endpoint << std::endl;
-  std::cout << "STD coverage endpoint = " << std_dev_cov_endpoint << std::endl;
-  std::cout << "Min coverage endpoint = " << min_cov << std::endl;
-  std::cout << "Max coverage endpoint = " << max_cov << std::endl;
-  std::cout << "L1 = " << L1 << std::endl;
-  std::cout << "alpha/L1 = " << alpha1 << std::endl;
-  std::cout << "Minimum coverage on endpoint strain = " << min_thr << std::endl;
-  //std::cout << "L2 = " << L2 << std::endl;
-  //std::cout << "alpha/L2 = " << alpha2 << std::endl;
+  std::cout << "Min coverage endpoint = " << min_cov_e << std::endl;
+  std::cout << "Max coverage endpoint = " << max_cov_e << std::endl;
 
   while (std::getline(in_file_endpoint, endpoint_line))
   {
@@ -180,13 +188,22 @@ int main (int argc, char* argv[])
         ((std::stoi(chr_a) == std::stoi(chr_e)) && (std::stoi(base_num_a) == std::stoi(base_num_e)))) 
     {
     
-      //endpoint mutation 
+      //endpoint coverage
       endpoint_forward = std::stoi(A_count_e) + std::stoi(G_count_e) + std::stoi(C_count_e) + std::stoi(T_count_e);
       endpoint_reverse = std::stoi(a_count_e) + std::stoi(g_count_e) + std::stoi(c_count_e) + std::stoi(t_count_e);
       endpoint_coverage = endpoint_forward + endpoint_reverse;
-      int Nm_endpoint = std::max(endpoint_forward, endpoint_reverse);
+      //int Nm_endpoint = std::max(endpoint_forward, endpoint_reverse);
 
-      if (ref_e == A_s)
+      //ancestor coverage
+      ancestor_forward = std::stoi(A_count_a) + std::stoi(G_count_a) + std::stoi(C_count_a) + std::stoi(T_count_a);
+      ancestor_reverse = std::stoi(a_count_a) + std::stoi(g_count_a) + std::stoi(c_count_a) + std::stoi(t_count_a);
+      ancestor_coverage = ancestor_forward + ancestor_reverse;
+      //int Nm_ancestor = std::max(ancestor_forward, ancestor_reverse);
+
+      std::pair<bool, std::string> same_reeds_ancestor = same_reeds(A_count_a, G_count_a, C_count_a, T_count_a,
+                                                                     a_count_a, g_count_a, c_count_a, t_count_a, ancestor_coverage);
+
+      if (same_reeds_ancestor.second == A_s)
       {
 
         mutated_reads = std::max(std::stoi(T_count_e)+std::stoi(t_count_e),
@@ -205,7 +222,7 @@ int main (int argc, char* argv[])
         }
       } 
 
-      if (ref_e == G_s)
+      if (same_reeds_ancestor.second == G_s)
       {
         mutated_reads = std::max(std::stoi(T_count_e)+std::stoi(t_count_e),
                                  std::stoi(C_count_e)+std::stoi(c_count_e)); 
@@ -223,7 +240,7 @@ int main (int argc, char* argv[])
         }
       }
 
-      if (ref_e == C_s)
+      if (same_reeds_ancestor.second == C_s)
       {
         mutated_reads = std::max(std::stoi(T_count_e)+std::stoi(t_count_e),
                                  std::stoi(A_count_e)+std::stoi(a_count_e)); 
@@ -241,7 +258,7 @@ int main (int argc, char* argv[])
         }
       }
 
-      if (ref_e == T_s)
+      if (same_reeds_ancestor.second == T_s)
       {
         mutated_reads = std::max(std::stoi(A_count_e)+std::stoi(a_count_e),
                                  std::stoi(C_count_e)+std::stoi(c_count_e)); 
@@ -259,68 +276,52 @@ int main (int argc, char* argv[])
         }
       }
       
-      //ancestor mutation 
-      ancestor_forward = std::stoi(A_count_a) + std::stoi(G_count_a) + std::stoi(C_count_a) + std::stoi(T_count_a);
-      ancestor_reverse = std::stoi(a_count_a) + std::stoi(g_count_a) + std::stoi(c_count_a) + std::stoi(t_count_a);
-      ancestor_coverage = ancestor_forward + ancestor_reverse;
-      int Nm_ancestor = std::max(ancestor_forward, ancestor_reverse);
+      //if (ref_a == A_s)
+      //{
+      //  int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
+      //                                 std::stoi(C_count_a)+std::stoi(c_count_a)); 
+      //  mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
+      //  ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
+      //} 
 
-      if (ref_a == A_s)
-      {
-        int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
-                                       std::stoi(C_count_a)+std::stoi(c_count_a)); 
-        mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
-        ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
-      } 
+      //if (ref_a == G_s)
+      //{
+      //  int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
+      //                                 std::stoi(C_count_a)+std::stoi(c_count_a)); 
+      //  mutated_reads_a = std::max(mutated_reads_a, std::stoi(A_count_a)+std::stoi(a_count_a));
+      //  ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
+      //} 
 
-      if (ref_a == G_s)
-      {
-        int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
-                                       std::stoi(C_count_a)+std::stoi(c_count_a)); 
-        mutated_reads_a = std::max(mutated_reads_a, std::stoi(A_count_a)+std::stoi(a_count_a));
-        ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
-      } 
+      //if (ref_a == C_s)
+      //{
+      //  int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
+      //                                 std::stoi(A_count_a)+std::stoi(a_count_a)); 
+      //  mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
+      //  ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
+      //} 
 
-      if (ref_a == C_s)
-      {
-        int mutated_reads_a = std::max(std::stoi(T_count_a)+std::stoi(t_count_a),
-                                       std::stoi(A_count_a)+std::stoi(a_count_a)); 
-        mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
-        ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
-      } 
-
-      if (ref_a == T_s)
-      {
-        int mutated_reads_a = std::max(std::stoi(A_count_a)+std::stoi(a_count_a),
-                                       std::stoi(C_count_a)+std::stoi(c_count_a)); 
-        mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
-        ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
-      } 
- 
-      //bool same_reeds_ancestor = same_reeds(A_count_a, G_count_a, C_count_a, T_count_a,
-      //                                      a_count_a, g_count_a, c_count_a, t_count_a, ancestor_coverage);
- 
-      if ((ancestor_coverage >= min_cov_a) && (ancestor_coverage <= max_cov_a) && (ancestor_coverage >= min_thr) && (ancestor_mut_freq <= mutation_thr_ancestor))
+      //if (ref_a == T_s)
+      //{
+      //  int mutated_reads_a = std::max(std::stoi(A_count_a)+std::stoi(a_count_a),
+      //                                 std::stoi(C_count_a)+std::stoi(c_count_a)); 
+      //  mutated_reads_a = std::max(mutated_reads_a, std::stoi(G_count_a)+std::stoi(g_count_a));
+      //  ancestor_mut_freq = static_cast<double>(mutated_reads_a)/static_cast<double>(ancestor_coverage);
+      //} 
+  
+      if ((ancestor_coverage >= min_cov_a) && (ancestor_coverage <= max_cov_a) && (same_reeds_ancestor.first == true))
       { 
-        if ((endpoint_coverage >= min_cov) && (endpoint_coverage <= max_cov) && (endpoint_coverage >= min_thr))
-        { 
-          sel_bases_pre_filter += 1;
-          double p_value_ancestor = binomial_p_value(ancestor_coverage, Nm_ancestor); 
-          if (p_value_ancestor >= alpha1)
-          //if (balanced_tot(A_count_a, G_count_a, C_count_a, T_count_a, a_count_a, g_count_a, c_count_a, t_count_a))
-          {
-            double p_value_endpoint = binomial_p_value(endpoint_coverage, Nm_endpoint);
-            if (p_value_endpoint >= alpha1)
-            //if (balanced_tot(A_count_e, G_count_e, C_count_e, T_count_e, a_count_e, g_count_e, c_count_e, t_count_e))
-            {    
-              selected_bases_p2 += 1;
+        selected_bases_p += 1;
 
-              if (endpoint_mut_freq > 0.0)
-              {
-                n_bases_ploidy2_mut += 1;
-                file_reeds_p2 << endpoint_coverage << "\t" << mutated_reads << "\t" << ploidy_end << std::endl;
-              }
-            } 
+        if ((endpoint_mut_freq > 0.0) && (endpoint_coverage >= min_cov_e) && (endpoint_coverage <= max_cov_e))
+        { 
+          if (balanced(endpoint_mutated_in, A_s, G_s, C_s, T_s, A_count_e, a_count_e, G_count_e, g_count_e, C_count_e, c_count_e, T_count_e, t_count_e))
+          {
+            n_bases_ploidy_mut += 1;
+            file_reeds_p << endpoint_coverage << "\t" << mutated_reads << "\t" << ploidy_end << std::endl;
+          }
+          else
+          {
+            n_mut_ploidy_nb += 1;
           }
         }
       }
@@ -331,23 +332,22 @@ int main (int argc, char* argv[])
       std::cout << lines_endpoint << "\t" << chr_e << std::endl; 
     }
   }
-
-  
+ 
   in_file_endpoint.close();
   in_file_ancestor.close();
 
+  size_t no_mutations_p = selected_bases_p - n_bases_ploidy_mut;
 
-  size_t no_mutations_p2 = selected_bases_p2 - n_bases_ploidy2_mut;
+  std::cout << "Selected bases: " << selected_bases_p << std::endl;
+  std::cout << "Not mutated number of bases: " << no_mutations_p << std::endl;
+  std::cout << "Number of mutated bases not balanced: " << n_mut_ploidy_nb << std::endl;
 
-  std::cout << "Selected bases ploidy 2: " << selected_bases_p2 << std::endl;
-  std::cout << "Selected bases pre filter: " << sel_bases_pre_filter << std::endl;
+  file_sel_p << no_mutations_p << std::endl;
+  file_nb << n_mut_ploidy_nb << std::endl;
 
-  file_sel_p2 << no_mutations_p2 << std::endl;
-  file_sel_pre << sel_bases_pre_filter << std::endl;
-
-  file_reeds_p2.close();
-  file_sel_p2.close();
-  file_sel_pre.close();
+  file_reeds_p.close();
+  file_sel_p.close();
+  file_nb.close();
 
   auto stop_timer = high_resolution_clock::now();
   auto measure_time = duration_cast<minutes>(stop_timer - start_timer);
@@ -356,6 +356,54 @@ int main (int argc, char* argv[])
 
   return 0;
 }
+
+bool balanced(std::string base_mutation,
+               std::string ref_A, std::string ref_G, std::string ref_C, std::string ref_T,
+               std::string A_s, std::string a_s, std::string G_s, std::string g_s,
+               std::string C_s, std::string c_s, std::string T_s, std::string t_s)
+{
+  bool reads_balanced = false;
+
+  if (base_mutation == ref_A)
+  {
+    double x = std::stod(A_s)/(std::stod(A_s) + std::stod(a_s));
+    if ((x >= (0.5 - 1.0/std::sqrt((std::stod(A_s) + std::stod(a_s))))) &&
+        (x <= (0.5 + 1.0/std::sqrt((std::stod(A_s) + std::stod(a_s))))))
+    {
+      reads_balanced = true;
+    }
+  }
+  else if (base_mutation == ref_G)
+  {
+    double x = std::stod(G_s)/(std::stod(G_s) + std::stod(g_s));
+    if ((x >= (0.5 - 1.0/std::sqrt((std::stod(G_s) + std::stod(g_s))))) &&
+        (x <= (0.5 + 1.0/std::sqrt((std::stod(G_s) + std::stod(g_s))))))
+    {
+      reads_balanced = true;
+    }
+  }
+  else if (base_mutation == ref_C)
+  {
+    double x = std::stod(C_s)/(std::stod(C_s) + std::stod(c_s));
+    if ((x >= (0.5 - 1.0/std::sqrt((std::stod(C_s) + std::stod(c_s))))) &&
+        (x <= (0.5 + 1.0/std::sqrt((std::stod(C_s) + std::stod(c_s))))))
+    {
+      reads_balanced = true;
+    }
+  }
+  else //ref_T
+  {
+    double x = std::stod(T_s)/(std::stod(T_s) + std::stod(t_s));
+    if ((x >= (0.5 - 1.0/std::sqrt((std::stod(T_s) + std::stod(t_s))))) &&
+        (x <= (0.5 + 1.0/std::sqrt((std::stod(T_s) + std::stod(t_s))))))
+    {
+      reads_balanced = true;
+    }
+  }
+
+  return reads_balanced;
+}
+
 
 bool balanced_tot(std::string A_count, std::string G_count, std::string C_count, std::string T_count,
                   std::string a_count, std::string g_count, std::string c_count, std::string t_count)
@@ -389,25 +437,6 @@ int rounded(double val)
   return r_val;
 }
 
-bool same_reeds(std::string A_count, std::string G_count, 
-                std::string C_count, std::string T_count,
-                std::string a_count, std::string g_count, 
-                std::string c_count, std::string t_count, 
-                int total_coverage)
-{
-  bool sr = false;
-
-  int ATOT = std::stoi(A_count) + std::stoi(a_count);
-  int GTOT = std::stoi(G_count) + std::stoi(g_count);
-  int CTOT = std::stoi(C_count) + std::stoi(c_count);
-  int TTOT = std::stoi(T_count) + std::stoi(t_count);
-  if ((ATOT == total_coverage) || (GTOT == total_coverage) || (CTOT == total_coverage) || (TTOT == total_coverage))
-  {
-    sr = true;
-  }
-  return sr;
-}
-
 double binomial_probability(int n, int m)
 {
   double b = 0.0;
@@ -439,3 +468,46 @@ double binomial_p_value(int N, int Nm)
   return p_value;
 }
 
+std::pair<bool, std::string> same_reeds(std::string A_count, std::string G_count,
+                                         std::string C_count, std::string T_count,
+                                         std::string a_count, std::string g_count,
+                                         std::string c_count, std::string t_count,
+                                         int total_coverage)
+{
+  std::pair<bool, std::string> ret_val = std::make_pair(false, "NN");
+
+  int ATOT = std::stoi(A_count) + std::stoi(a_count);
+  int GTOT = std::stoi(G_count) + std::stoi(g_count);
+  int CTOT = std::stoi(C_count) + std::stoi(c_count);
+  int TTOT = std::stoi(T_count) + std::stoi(t_count);
+
+  if (ATOT == total_coverage)
+  {
+    ret_val.first = true;
+    ret_val.second = "A";
+    return ret_val;
+  }
+
+  if (GTOT == total_coverage)
+  {
+    ret_val.first = true;
+    ret_val.second = "G";
+    return ret_val;
+  }
+
+  if (CTOT == total_coverage)
+  {
+    ret_val.first = true;
+    ret_val.second = "C";
+    return ret_val;
+  }
+
+  if (TTOT == total_coverage)
+  {
+    ret_val.first = true;
+    ret_val.second = "T";
+    return ret_val;
+  }
+
+  return ret_val;
+}

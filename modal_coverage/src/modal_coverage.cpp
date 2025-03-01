@@ -20,9 +20,11 @@ std::pair<int, int>  modal(std::vector<std::pair<int,int>> &counts);
 int main (int argc, char* argv[])
 {
 
-  if (argc != 3)
+  if (argc < 3)
   {
-    std::cout << "Use: " << argv[0] << " [path_pseudo-pileup.dat] [path_output_file.dat]" << std::endl; 
+    std::cout << "Use: " << argv[0] << " <path_pseudo-pileup.dat> <path_output_file.dat> [path_output] [strain name] [ploidy] [ancestor|endpoint] [Options]" << std::endl;
+    std::cout << "Optional options: " << std::endl;
+    std::cout << "  --hist               print coverage histogram in a txt file               " << std::endl;
     return 1;
   }
 
@@ -90,6 +92,21 @@ int main (int argc, char* argv[])
   }
 
   distribution(coverages, counts);
+
+  //if (argv[7] != nullptr)
+  //{
+  //  std::string path_out_histo = std::string{argv[3]}+std::string{"/"}
+  //                               +std::string{argv[4]}+std::string{"/"}
+  //                               +std::string{argv[5]}+std::string{"/"}
+  //                               +std::string{argv[6]}+"/histo_data.dat";
+  //  std::ofstream histo_out(path_out_histo, std::ios_base::binary);
+  //  for (auto &el : counts)
+  //  {
+  //    histo_out << el.first << "\t" << el.second << std::endl; 
+  //  }
+
+  //  histo_out.close();
+  //}
  
   std::pair<int, int> modal_cov = modal(counts); 
   

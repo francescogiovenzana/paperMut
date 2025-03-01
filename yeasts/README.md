@@ -8,30 +8,30 @@ explained in the individual folders, for all yeast ancestor and endpoint sequenc
 
 - ``index-ref.sh``: make indexes for ``bwa`` (script calls `bwa`).
 
-Reference genome for Saccharomyces Cerevisiae used: ``S288C_reference_genome_R64-1-1_20110203``.
+(Reference genome for Saccharomyces Cerevisiae used: ``S288C_reference_genome_R64-1-1_20110203``)
 
-- ``map-sr.sh``: maps short-reads and fixes the bam file (script calls `bwa` and `samtools`).
+- ``map-sr.sh``: maps short-reads and fixes the bam file (script calls `bwa` and `samtools`),
 
 - ``ref-map.sh``: calls both ``index-ref.sh`` and ``map-sr.sh`` in this order. It also creates  
-``logs`` directory for outputs and errors of the used scripts.
+``logs`` directory for outputs and errors of the used scripts,
 
-- ``bam_to_pileup.sh``: transforms bam files in pileup files with `samtools mpileup`.
+- ``bam_to_pileup.sh``: transforms bam files in pileup files with `samtools mpileup`,
 
-- ``final-mpileup.sh``: calls `parsing` to create all the pseudopileup txt files.
+- ``final-mpileup.sh``: calls `parsing` to create all the pseudo pileup txt files,
 
-- ``common.sh``: calls `common` to create common lines files of the ancestor and endpoint sequencing.
+- ``common.sh``: calls `common` to create common lines files of the ancestor and endpoint sequencing,
 
-- ``mean_coverage.sh``: calls `mean_coverage` to compute mean coverage and std dev for each yeast genome sequencing.
+- ``mean_coverage.sh``: calls `mean_coverage` to compute mean coverage and std dev for each yeast genome sequencing,
 
-- ``modal_coverage.sh``: calls `modal_coverage` to compute modal coverage and for each yeast genome sequencing.
+- ``modal_coverage.sh``: calls `modal_coverage` to compute modal coverage and for each yeast genome sequencing,
 
-- ``correction.sh``: calls `correction_yeast` to compute the number of bases for the Bonferroni correction for every yeast genome sequencing.
+- ``reads-mut.sh``: calls `list_mutations` to produce the list of possible mutations in each pair of ancestor-endpoint sequences,
 
-- ``reads-mut.sh``: calls `list_mutations_yeast` to produce the list of possible mutations in each pair of ancestor-endpoint sequences.
+- ``clonal-mut.sh``: calls `clonal` or `clonal_hap` to compute clonal mutation rate for each pair of ancestor-endpoint sequences,
 
-- ``clonal-mut.sh``: calls `clonal` or `clonal_hap` to compute clonal mutation rate for each pair of ancestor-endpoint sequences.
+- ``list_coord_mut.sh``: calls the list of possible mutations with genome coordinates (chromosome and base number),
 
-
+- ``signatures.sh``: calls the list of the mutations for the signatures.
 
 ### Notes
 

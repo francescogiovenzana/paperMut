@@ -9,7 +9,7 @@ we splitted the case of diploid genomes from the case of haploid genomes.
 
 Input parameters are basically the same:
 
-1. the path of ``file_reeds_pX.dat`` (where X = ploidy number),
+1. the path of ``file_reeds_pX.dat`` (where X = copy number),
 2. the path of ``file_no_mutations_pX.dat``,
 3. the path for the output files,
 4. modal coverage (only for ``clonal_hap``),

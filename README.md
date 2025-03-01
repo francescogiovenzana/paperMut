@@ -18,11 +18,21 @@ To obtain the final list, the various subprograms should be executed in the foll
 
 4. modal coverage
 
-5. correction
-
-Once the five subprograms have been executed, the list of potential mutations for CRC or yeast can be obtained using the subprogram
+Once the four subprograms have been executed, the list of potential mutations for CRC or yeast can be obtained using the subprogram
 
 6. list mutations 
+
+If you want the coordinates of the potential mutations, you can run directly
+
+7. list coord mut
+
+in the **signatures** dir.
+
+You can obtain the list of the potential signatures using the exec
+
+8. signatures mut
+
+in the **signatures** dir.
 
 **CRC_clonal_mr** and **YEAST_clonal_mr** are used to compute clonal mutation rate.  
 To calculate this mutation rate, one needs an experimental parameter: the number of _generations_ (or number of cell divisions) during which the mutation accumulation experiment took place.
@@ -32,7 +42,6 @@ so the Makefile containing the subprograms must be compiled before analyzing the
 
 The **simulation/** folder, on the other hand, contains all the files related to the simulation, which can be compiled and run separately from the other components of the data analysis.  
 A dedicated Makefile is included in this folder.
-
 
 ## Compilation
 
@@ -55,7 +64,6 @@ or:
 make cX
 ```
 
-
 ## Execution
 
 To run a single subprogram follow this (example with parsing):
@@ -65,7 +73,6 @@ cd parsing/exec/
 ```
 Sometime the executable file requires additional arguments (the description is provided in the individual README files).  
 All programs have their own executable in the ``exec`` subfolder.
-
 
 ## Dependencies
 

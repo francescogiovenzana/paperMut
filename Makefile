@@ -1,28 +1,25 @@
-#mutations directory
-##Used in list mutations to select finaly output directory. Absolute or relative path.
-mut_dir:=/
-
 CXX:=g++ -std=c++20
 LD:=g++ -std=c++20
 CXXFLAGS:=-Wall -O3 -lz -lboost_iostreams
 CPPFLAGS:=
 LDFLAGS:=-lz -lboost_iostreams
 
-.PHONY: all parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap correction correction_yeast
 
-all: parsing parsing_yeast common mean_coverage modal_coverage list_mut list_mut_yeast mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap correction correction_yeast
+.PHONY: all parsing parsing_yeast common mean_coverage modal_coverage list_mut mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap list_coord sign_coord
 
-clean: cparsing cparsing_yeast ccommon cmean_coverage cmodal_coverage clist_mut clist_mut_yeast cmut_rate_clonal cmut_rate_clonal_yeast cmut_rate_clonal_yeast_hap ccorrection ccorrection_yeast
+all: parsing parsing_yeast common mean_coverage modal_coverage list_mut mut_rate_clonal mut_rate_clonal_yeast mut_rate_clonal_yeast_hap list_coord sign_coord
+
+clean: cparsing cparsing_yeast ccommon cmean_coverage cmodal_coverage clist_mut cmut_rate_clonal cmut_rate_clonal_yeast cmut_rate_clonal_yeast_hap clist_coord csign_coord
 
 #Parsing
 parsing: parsing/exec/parsing
 
 parsing/exec/parsing: parsing/obj/parsing.o
-	${LD} ${LDFLAGS} $^ -o $@
+	${LD} $^ -o $@ ${LDFLAGS}
 
 parsing/obj/parsing.o: parsing/src/parsing.cpp
 	mkdir -p parsing/obj
-	${CXX} ${CPPFLAGS} -I pileup -D 'M_DIR="${mut_dir}"' ${CXXFLAGS} -c $< -o $@
+	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' ${CXXFLAGS} -c $< -o $@ ${CPPFLAGS}
 
 cparsing:
 	rm -f parsing/obj/parsing.o
@@ -32,11 +29,11 @@ cparsing:
 parsing_yeast: parsing/exec/parsing_yeast
 
 parsing/exec/parsing_yeast: parsing/obj/parsing_yeast.o
-	${LD} ${LDFLAGS} $^ -o $@
+	${LD} $^ -o $@ ${LDFLAGS}
 
 parsing/obj/parsing_yeast.o: parsing/src/parsing_yeast.cpp
 	mkdir -p parsing/obj
-	${CXX} ${CPPFLAGS} -I pileup -D 'M_DIR="${mut_dir}"' ${CXXFLAGS} -c $< -o $@
+	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' ${CXXFLAGS} -c $< -o $@ ${CPPFLAGS}
 
 cparsing_yeast:
 	rm -f parsing/obj/parsing_yeast.o
@@ -77,7 +74,7 @@ modal_coverage/exec/modal_coverage: modal_coverage/obj/modal_coverage.o
 	${LD} $^ -o $@
 
 modal_coverage/obj/modal_coverage.o: modal_coverage/src/modal_coverage.cpp
-	mkdir -p mean_coverage/obj
+	mkdir -p modal_coverage/obj
 	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
 
 cmodal_coverage:
@@ -97,20 +94,6 @@ list_mutations/obj/list_mutations.o: list_mutations/src/list_mutations.cpp
 clist_mut:
 	rm -f list_mutations/obj/list_mutations.o
 	rm -f list_mutations/exec/list_mutations
-
-#List mutations yeasts
-list_mut_yeast: list_mutations/exec/list_mutations_yeast
-
-list_mutations/exec/list_mutations_yeast: list_mutations/obj/list_mutations_yeast.o
-	${LD} $^ -o $@
-
-list_mutations/obj/list_mutations_yeast.o: list_mutations/src/list_mutations_yeast.cpp
-	mkdir -p list_mutations/obj
-	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
-
-clist_mut_yeast:
-	rm -f list_mutations/obj/list_mutations_yeast.o
-	rm -f list_mutations/exec/list_mutations_yeast
 
 #mutation rate clonal mutations CRC
 mut_rate_clonal: CRC_clonal_mr/exec/clonal
@@ -154,30 +137,30 @@ cmut_rate_clonal_yeast_hap:
 	rm -f YEAST_clonal_mr/obj/clonal_hap.o
 	rm -f YEAST_clonal_mr/exec/clonal_hap
 
-#corrections
-correction: correction/exec/correction
+#Coordinates of the mutations
+list_coord: signatures/exec/list_coord_mut
 
-correction/exec/correction: correction/obj/correction.o
+signatures/exec/list_coord_mut: signatures/obj/list_coord_mut.o
 	${LD} $^ -o $@
 
-correction/obj/correction.o: correction/src/correction.cpp
-	mkdir -p correction/obj
+signatures/obj/list_coord_mut.o: signatures/src/list_coord_mut.cpp
+	mkdir -p signatures/obj
 	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
 
-ccorrection:
-	rm -f correction/obj/correction.o
-	rm -f correction/exec/correction
+clist_coord:
+	rm -f signatures/obj/list_coord_mut.o
+	rm -f signatures/exec/list_coord_mut
 
-#corrections yeasts
-correction_yeast: correction/exec/correction_yeast
+#Signatures
+sign_coord: signatures/exec/signatures_mut
 
-correction/exec/correction_yeast: correction/obj/correction_yeast.o
+signatures/exec/signatures_mut: signatures/obj/signatures_mut.o
 	${LD} $^ -o $@
 
-correction/obj/correction_yeast.o: correction/src/correction_yeast.cpp
-	mkdir -p correction/obj
+signatures/obj/signatures_mut.o: signatures/src/signatures_mut.cpp
+	mkdir -p signatures/obj
 	${CXX} -I pileup -D 'M_DIR="${mut_dir}"' -Wall -O3 -c $< -o $@
 
-ccorrection_yeast:
-	rm -f correction/obj/correction_yeast.o
-	rm -f correction/exec/correction_yeast
+csign_coord:
+	rm -f signatures/obj/signatures_mut.o
+	rm -f signatures/exec/signatures_mut

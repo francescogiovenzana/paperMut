@@ -1,9 +1,9 @@
 #!/bin/bash
 
-ref_name="${1}" #es : msh2_BYBY
-path_exec="${2}"
+ref_name="${1}"   #es : msh2_BYBY
+path_exec="${2}"  #absolute path
 n_gen="1000"
-ploidy=2
+ploidy="${3}"     #ploidy of the genome
 
 base_dir=$(cd "data/pileup/common/${ref_name}" && pwd)
 
@@ -44,10 +44,10 @@ if [[ -n "$all_dir" ]]; then
    else
 
     if [[ "${name_seq[0]}" == "${dir}" ]]; then
-     ancestor="${name_seq[1]}" 
+     ancestor="${name_seq[1]}"
      endpoint="${name_seq[0]}"
     else
-     ancestor="${name_seq[0]}" 
+     ancestor="${name_seq[0]}"
      endpoint="${name_seq[1]}"
     fi
 
@@ -61,6 +61,6 @@ if [[ -n "$all_dir" ]]; then
 
   fi
 
- done 
+ done
 
 fi

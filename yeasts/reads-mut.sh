@@ -1,8 +1,10 @@
 #!/bin/bash
 
-ref_name="${1}" #es : msh2_BYBY
-path_exec="${2}"
-ploidy="2"
+ref_name="${1}"   #es : msh2_BYBY
+path_exec="${2}"  #absolute path
+ploidy="${3}"     #ploidy of the genome
+
+printf "Ploidy = %s\n" $ploidy
 
 base_dir=$(cd "data/pileup/common/${ref_name}" && pwd)
 
@@ -16,16 +18,16 @@ if [[ -n "$all_dir" ]]; then
   count_name=$(echo "${files_name}" | wc -w)
   name_seq=($(echo "${files_name}" | cut -d "-" -f 1 | cut -d "/" -f 3))
 
-  if [[ -d "${dir}/reads" ]]; then rm -rf "${dir}/reads"; fi 
+  if [[ -d "${dir}/reads" ]]; then rm -rf "${dir}/reads"; fi
   mkdir -p "${dir}/reads"
 
   if [[ "$count_name" -ge 2 ]]; then
    #printf "%s\n" "${name_seq[0]}"
    if [[ "${name_seq[0]}" == "${dir}" ]]; then
-    ancestor="${name_seq[1]}" 
+    ancestor="${name_seq[1]}"
     endpoint="${name_seq[0]}"
    else
-    ancestor="${name_seq[0]}" 
+    ancestor="${name_seq[0]}"
     endpoint="${name_seq[1]}"
    fi
    #printf "Ancestor: %s\n" $ancestor
@@ -36,11 +38,11 @@ if [[ -n "$all_dir" ]]; then
    modal_endpoint=$(cat "${dir}/modal_coverage/${endpoint}-modalcov.dat" | head -n 1)
    std_endpoint=$(cat "${dir}/mean_coverage/${endpoint}-mc.dat" | tail -n 1)
 
-   corr=$(cat "${dir}/correction/L_correction_p${ploidy}.dat")
+   #corr=$(cat "${dir}/correction/L_correction_p${ploidy}.dat")
    (
-   "${path_exec}/list_mutations_yeast" "${dir}/common/${ancestor}-${ref_name}_common_control_mpileup.dat" "${dir}/common/${endpoint}-${ref_name}_common_evolved_mpileup.dat" "${dir}/reads/" "${modal_ancestor}" "${std_ancestor}" "${modal_endpoint}" "${std_endpoint}" "${ploidy}" "${corr}"
+   "${path_exec}/list_mutations" "${dir}/common/${ancestor}-${ref_name}_common_control_mpileup.dat" "${dir}/common/${endpoint}-${ref_name}_common_evolved_mpileup.dat" "${dir}/reads/" "${modal_ancestor}" "${std_ancestor}" "${modal_endpoint}" "${std_endpoint}" "${ploidy}"
    )
   fi
 
- done 
+ done
 fi
