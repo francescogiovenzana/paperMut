@@ -24,9 +24,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_math.h>
-//
-//#include<math.h>
-//#include
+
 
 // Define SEED and S_DIR if not passed as macros
 std::string curr_path = std::filesystem::current_path(); // FG 24/02/25 Adding absolute path
@@ -36,6 +34,36 @@ const std::string S_DIR = curr_path + "/../output";
 //const std::string SEED = curr_path + "../seed"; 
 //const std::string S_DIR = curr_path + "../output";
 
+
+/*
+Implementation of selection mechanism. First attempt 27/02/2025.
+Idea: consider death_prob as node feature, not tree feature. 
+This idea implies:
+* Adapt struct Node
+* Adapt tree so that death_prob is no longer a tree variable
+* Adapt evolution/mutation function so that single the process of death happens node-wise.
+Actually, the decision whether the daughter cells survive is made node wise. 
+The point is properly implementing the death prob as a distribution or anything else. 
+28/02/25
+We try another way, by setting the death_probability as a node feature, 
+but having it extracted from a pdf whose parameters (type, notable parameters) are tree features
+*/
+
+template <typename T> struct Node {
+  T data;
+  T parent;
+  double death_probability;
+  Node () {}
+  Node(const T &data, const T &parent, double &death_probability) : data{data}, parent{parent}, death_probability{death_probability} {}
+  Node& operator =(const Node &node)
+  {
+    data = node.data;
+    parent = node.parent;
+    death_probability = node.death_probability;
+    return *this;
+  }
+};
+/* // Old version
 template <typename T> struct Node {
   T data;
   T parent;
@@ -48,7 +76,7 @@ template <typename T> struct Node {
     return *this;
   }
 };
-
+*/
 template <typename T> 
 class Tree
 {
@@ -57,7 +85,9 @@ public:
   std::vector<double> freq_mutations;
 
   Tree(const std::vector<Node<T>> &tree, 
-       double death_probability,
+       char death_prob_type,
+       double death_prob_p0,
+       double death_prob_p1,
        double seq_error,
        double K,
        size_t max_generations,
@@ -67,7 +97,9 @@ public:
        size_t n_zero):
        rnd(SEED + "/Primes", SEED + "/seed.in"),
        tree{tree},
-       death_probability{death_probability}, 
+       death_prob_type{death_prob_type},
+       death_prob_p0{death_prob_p0}, 
+       death_prob_p1{death_prob_p1},  
        seq_error{seq_error},
        K{K},
        max_generations{max_generations},
@@ -95,7 +127,7 @@ public:
   }
 
   //get
-  ///////////////
+  /////////////// // questi sono tutti metodi per accedere alle pvt???
   size_t get_max_node_index() const {return max_node_index;}
   
   std::vector<Node<T>> get_last_layer() const
@@ -116,6 +148,11 @@ public:
   size_t get_all_alive() const
   {
     return all_alive;
+  }
+
+  char get_death_prob_type() const
+  {
+    return death_prob_type;
   }
 
   size_t get_not_mutated_bases(size_t s_zero) const
@@ -159,7 +196,7 @@ public:
     freq_mutations.resize(0);
   }
 
-  void start_tree(long double mut, size_t n_e, size_t gen_i)
+  void start_tree(long double mut, size_t n_e, size_t gen_i, std::mt19937 &engine)
   {  
     resize_tree_generations();
     max_node_index = 0;
@@ -175,7 +212,10 @@ public:
     min_survived_nodes_number = n_e;
     max_generations = gen_i;
 
-    if (death_probability > 0.5) 
+
+    // Now death_probability is a node feature. We implement this check in main.
+    // Alternative/supplementary hypothesis: raise an exception while creating the node (not so easy to build)
+    /*if (death_probability > 0.5) 
     {
       std::cout << std::endl;
       std::cout << "Value of death probability not allowed. " << std::endl;
@@ -183,20 +223,20 @@ public:
       std::cout << "Death probability needs to be <= 0.5.   " << std::endl;
       std::cout << std::endl;
       exit(1);
-    }
+    }*/
     if (min_survived_nodes_number > 0 && max_generations == 0)
     {
       std::vector<Node<T>> root_layer;
       generations.push_back(root_layer);
-      root_node();
-      generate_tree_min_size(mutation_rate, min_survived_nodes_number, max_generations);
+      root_node(engine);
+      generate_tree_min_size(mutation_rate, min_survived_nodes_number, max_generations, engine);
     }
     else if (min_survived_nodes_number == 0 && max_generations > 0) 
     {
       std::vector<Node<T>> root_layer;
       generations.push_back(root_layer);
-      root_node();
-      generate_tree_fixed_generations(mutation_rate, min_survived_nodes_number, max_generations);
+      root_node(engine);
+      generate_tree_fixed_generations(mutation_rate, min_survived_nodes_number, max_generations, engine);
     }
     else
     {
@@ -213,24 +253,28 @@ public:
     freq_mutations.resize(0);
   }
 
-  void root_node()
+  
+  void root_node(std::mt19937 &engine) 
   {
-    tree.push_back(Node<size_t>(0,0));
-    generations[0].push_back(Node<size_t>(0,0));
+    //std::cout << "Test" << std::endl;
+    double death_prob = generate_death_prob(death_prob_type, death_prob_p0, death_prob_p1, engine);
+    tree.push_back(Node<size_t>(0,0,death_prob));
+    generations[0].push_back(Node<size_t>(0,0,death_prob));
   }
 
-  void generate_tree_min_size(long double &mutation_rate, size_t &n_ext, size_t &gen_i)
+  void generate_tree_min_size(long double &mutation_rate, size_t &n_ext, size_t &gen_i, std::mt19937 &engine)
   {
     size_t tree_gen = 0;
     size_t old_max_node_index = 0;
     size_t incremental_index = 0;
     while (survived_nodes < min_survived_nodes_number)
     {
-      add_layer(old_max_node_index, incremental_index, tree_gen);
+      add_layer(old_max_node_index, incremental_index, tree_gen, engine);
       if (((incremental_index + 1) - old_max_node_index) == 0)
       {
+        // Questo passaggio non mi è particolarmente chiaro...
         //std::cout << "Tree is extinct. Tree regeneration... " << std::endl;
-        start_tree(mutation_rate, n_ext, gen_i);
+        start_tree(mutation_rate, n_ext, gen_i, engine);
         //std::cout << "Tree is extinct. Tree generation aborted." << std::endl;
         //break;
       }
@@ -242,14 +286,14 @@ public:
     }
   }
 
-  void generate_tree_fixed_generations(long double &mutation_rate, size_t &n_ext, size_t &gen_i)
+  void generate_tree_fixed_generations(long double &mutation_rate, size_t &n_ext, size_t &gen_i, std::mt19937 &engine)
   {
     size_t tree_gen = 0;
     size_t old_max_node_index = 0;
     size_t incremental_index = 0;
     while (tree_gen < max_generations)
     {    
-      add_layer(old_max_node_index, incremental_index, tree_gen);
+      add_layer(old_max_node_index, incremental_index, tree_gen, engine);
 
       if (((incremental_index + 1) - old_max_node_index) == 0)
       {
@@ -263,23 +307,23 @@ public:
     }  
   }
 
-  void add_layer(size_t &old_max_node_index, size_t &incremental_index, size_t &tree_gen)
+  void add_layer(size_t &old_max_node_index, size_t &incremental_index, size_t &tree_gen, std::mt19937 &engine)
   {
     for (; old_max_node_index < incremental_index + 1; ++old_max_node_index)
     { 
-      childs_nodes(tree[old_max_node_index], tree_gen);
+      childs_nodes(tree[old_max_node_index], tree_gen, engine);
     } 
     
     incremental_index = max_node_index;
     old_max_node_index = (incremental_index + 1) - survived_nodes;
   }
-
-  void childs_nodes(const Node<T> &node, size_t &tree_gen)
+  // Old version
+  /*void childs_nodes(const Node<T> &node, size_t &tree_gen)
   { 
     Node temp = node;
-    for (size_t i = 0; i < 2; ++i)
+    for (size_t i = 0; i < 2; ++i) // binary division. From one parent cell, 0, 1, or 2 daugther cells can result as outcome.
     {
-      if ((rnd.rannyu() > death_probability) || death_probability == 0.0)
+      if ((rnd.rannyu() > death_probability) || death_probability == 0.0) // now the death probability is retrieved from the node
       {
         max_node_index += 1; 
         survived_nodes += 1;
@@ -287,7 +331,63 @@ public:
         tree_generations(Node<size_t>(max_node_index, temp.data), tree_gen);
       }
     } 
+  }*/
+
+  // The survival decision is made at the node level. 
+  // This one should work "as is"
+  // What's left now is how to set the death_prob in the node
+  void childs_nodes(const Node<T> &node, size_t &tree_gen, std::mt19937 &engine)
+  { 
+    Node temp = node;
+    double new_node_death_prob;
+    for (size_t i = 0; i < 2; ++i) // binary division. From one parent cell, 0, 1, or 2 daugther cells can result as outcome.
+    {
+      if ((rnd.rannyu() > temp.death_probability) || temp.death_probability == 0.0) // now the death probability is retrieved from the node
+      {
+        max_node_index += 1; 
+        survived_nodes += 1;
+        new_node_death_prob = generate_death_prob(death_prob_type, death_prob_p0, death_prob_p1, engine);
+        tree.push_back(Node<size_t>(max_node_index, temp.data, new_node_death_prob)); 
+        tree_generations(Node<size_t>(max_node_index, temp.data, new_node_death_prob), tree_gen);
+      }
+    } 
   }
+
+  // Wrap around different functions using different pdfs to generate death probabilities
+  double generate_death_prob (char type, double p0, double p1, std::mt19937 &engine) 
+  {
+    size_t death_prob = 0;
+    if (type == 'C')
+    {
+      death_prob = generate_death_prob_constant(p0);
+    }
+    else if (type == 'U')
+    {
+      death_prob = generate_death_prob_uniform(p0, p1, engine);
+    }
+    else
+    {
+      std::cerr << "Error: Death probability type not recognized. Exit." << std::endl;
+      exit(1);
+    }
+    return death_prob;
+  }
+  
+  // Single value extracted from a uniform pdf
+  // Which raises the idea that the death_prob should be taken by the tree in terms of parameters: type, p0, p1
+  double generate_death_prob_uniform(double lower_bound, double upper_bound, std::mt19937 &engine) // I'm not sure this is proper sintax
+  {
+    size_t attempts = max_node_index; 
+    std::uniform_real_distribution<double> dis(lower_bound, upper_bound);
+    double death_prob = dis(engine);
+    return death_prob;
+  }
+
+  double generate_death_prob_constant(double p0)
+  {
+    return p0;
+  }
+
 
   void fill_tree(const Node<T> &node)
   {
@@ -475,16 +575,19 @@ public:
     } 
     //std::cout << "All alive cells: " << all_alive << std::endl; 
   }
-
+  // WARNING
+  // This function generates the number of mutations happening in a single generation (time-step). 
+  // The number of mutations is a single "int" value, being the extracted number of mutations expected. 
   size_t generate_mutations(std::mt19937 &engine)
   {
     size_t attempts = max_node_index * n_bases; 
     std::binomial_distribution<long long unsigned> bd(attempts, mutation_rate);
     size_t mutations = bd(engine);
+    std::cout << mutations << std::endl;
     return mutations;
   }
 
-  size_t random_mutant_cell()
+  size_t random_mutant_cell() // mutates a single base in a single cell --> attempts = max_node_index * n_bases
   { 
     double attempts = static_cast<double>(max_node_index*n_bases); 
     double mutant_idx = 1.0 + rnd.rannyu(0.0, attempts);
@@ -499,7 +602,7 @@ public:
 
   void set_mutations_with_count(std::mt19937 &engine)
   {
-    n_mutations = generate_mutations(engine); 
+    n_mutations = generate_mutations(engine); // this is a single "int"
 
     //std::cout << "Number of mutations = " << n_mutations << std::endl;
     for (size_t i = 0; i < n_mutations; ++i)
@@ -521,13 +624,14 @@ public:
 
   void set_mutations(std::mt19937 &engine)
   {
-    n_mutations = generate_mutations(engine); 
+    n_mutations = generate_mutations(engine); // mutations happening in a single generation (time-step)
 
-    //std::cout << "Number of mutations = " << n_mutations << std::endl;
+    std::cout << "Number of mutations = " << n_mutations << std::endl;
     for (size_t i = 0; i < n_mutations; ++i)
     {
-      size_t cell_id = random_mutant_cell();
+      size_t cell_id = random_mutant_cell(); // it's random_mutant_cell to *actually* perform the mutation, by choosing a random cell&base
       //std::cout << "Mutated cell id = " << cell_id << std::endl;
+      // chosen a cell we say it's mutated, all of its progeny will be equally mutated.
       size_t alive_mutated_progeny = count_alive_progeny(cell_id);
       //std::cout << "Alive progeny mutated cell = " << alive_mutated_progeny << std::endl;
       //std::cout << "Survived nodes = " << survived_nodes << std::endl;
@@ -1049,7 +1153,9 @@ private:
   std::vector<std::vector<Node<T>>> generations;
   std::vector<Node<T>> tree;
   long double mutation_rate;
-  double death_probability;
+  char death_prob_type;
+  double death_prob_p0;
+  double death_prob_p1;
   double seq_error;
   double K;
   double threshold;
