@@ -156,6 +156,8 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+  //std::cout << "Death probability ="<< death_prob_p0 << std::endl;
+
   auto start_timer = high_resolution_clock::now();
 
   // Initialize Xoshiro RNG

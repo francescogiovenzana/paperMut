@@ -258,6 +258,7 @@ public:
   {
     //std::cout << "Test" << std::endl;
     double death_prob = generate_death_prob(death_prob_type, death_prob_p0, death_prob_p1, engine);
+    //std::cout << "Root node death probability = " << death_prob << std::endl;
     tree.push_back(Node<size_t>(0,0,death_prob));
     generations[0].push_back(Node<size_t>(0,0,death_prob));
   }
@@ -347,6 +348,7 @@ public:
         max_node_index += 1; 
         survived_nodes += 1;
         new_node_death_prob = generate_death_prob(death_prob_type, death_prob_p0, death_prob_p1, engine);
+        //std::cout << "Node " << max_node_index << " has death probability = " << new_node_death_prob << std::endl;
         tree.push_back(Node<size_t>(max_node_index, temp.data, new_node_death_prob)); 
         tree_generations(Node<size_t>(max_node_index, temp.data, new_node_death_prob), tree_gen);
       }
@@ -356,7 +358,7 @@ public:
   // Wrap around different functions using different pdfs to generate death probabilities
   double generate_death_prob (char type, double p0, double p1, std::mt19937 &engine) 
   {
-    size_t death_prob = 0;
+    double death_prob = 0;
     if (type == 'C')
     {
       death_prob = generate_death_prob_constant(p0);
@@ -576,7 +578,7 @@ public:
     //std::cout << "All alive cells: " << all_alive << std::endl; 
   }
   // WARNING
-  // This function generates the number of mutations happening in a single generation (time-step). 
+  // This function generates the number of mutations happening in a single generation 
   // The number of mutations is a single "int" value, being the extracted number of mutations expected. 
   size_t generate_mutations(std::mt19937 &engine)
   {
@@ -708,6 +710,8 @@ public:
     return n_false_positive;
   }
 
+  // Here starts the sequencing part
+
   size_t error_no_mut_bases(std::mt19937 &engine, const double &e)
   {
     double r = static_cast<double>(coverage)/e;
@@ -717,24 +721,24 @@ public:
     return c;
   }
 
-  //void sequencing_err_not_mutated_bases(const gsl_rng *r, double pp, 
-  //                                      bool set_ploidy, size_t n_zeros,
-  //                                      std::vector<size_t> &mut_bases_error)
-  //{    
+  void sequencing_err_not_mutated_bases(const gsl_rng *r, double pp, 
+                                        bool set_ploidy, size_t n_zeros,
+                                        std::vector<size_t> &mut_bases_error)
+  {    
 
-  //  double vec_pr[coverage];
-  //  for (size_t i = 0; i < coverage; ++i)
-  //  { 
-  //    double pr = gsl_ran_binomial_pdf(i, seq_error, coverage);
-  //    vec_pr[i] = pr;
-  //  }
+    double vec_pr[coverage];
+    for (size_t i = 0; i < coverage; ++i)
+    { 
+      double pr = gsl_ran_binomial_pdf(i, seq_error, coverage);
+      vec_pr[i] = pr;
+    }
 
-  //  unsigned int vec_values[coverage];
-  //  gsl_ran_multinomial(r, coverage, n_zeros, vec_pr, vec_values);
-  //
-  //  for (size_t i = 0; i < coverage; ++i)
-  //  {
-  //    mut_bases_error[i] += static_cast<size_t>(vec_values[i]);
+    unsigned int vec_values[coverage];
+    gsl_ran_multinomial(r, coverage, n_zeros, vec_pr, vec_values);
+  
+    for (size_t i = 0; i < coverage; ++i)
+    {
+      mut_bases_error[i] += static_cast<size_t>(vec_values[i]);
   //  }
   //}
 
