@@ -220,32 +220,71 @@ int main(int argc, char* argv[])
         std::cerr << "Error: Could not open output files at step " << j << std::endl;
         return 1;
     }
-        //This all reconnects before "start_tree"
-    /*
+       
 
-    std::string file_freqs = "file_frequencies_"+std::to_string(j)+".dat";
-    std::string file_nodes = "file_n_nodes_"+std::to_string(j)+".dat";
 
-    //std::cout << "Test 1" << std::endl;
-    std::ofstream file_out_freqs(S_DIR +std::string{argv[2]}+std::string{"/"}+std::string{argv[3]}+std::string{"/"}
-                                           +std::string{argv[4]}+"x/ploidy"+std::string{argv[5]}
-                                           +"/n_ext/"+file_freqs, std::ios_base::binary);
-    std::ofstream file_out_nodes(S_DIR +std::string{argv[2]}+std::string{"/"}+std::string{argv[3]}+std::string{"/"}
-                                           +std::string{argv[4]}+"x/ploidy"+std::string{argv[5]}
-                                           +"/n_ext/"+file_nodes, std::ios_base::binary);
-
-    */
     tree.start_tree(MUT_rate, min_survived_nodes_number, max_generations, engine);
+
+    
+
+    //tree.compute_mutations(engine);
+    // This part is substituted by the function compute_mutations [maybe not]
     //std::cout << "Tree started" << std::endl;
+
+    // variables for sequencing implementation
+    const gsl_rng *r;
+    std::vector<double> frequencies_sampling;
+    std::vector<size_t> zeros;
+    std::vector<size_t> mut_bases_error;
+
+  
     tree.set_mutations(engine);
 
+
+    /* Here starts the implementation of sequencing error */
+    // Assert
+    if (seq_error < 0.0 || seq_error > 1.0)
+    {
+      std::cerr << "Error: Sequencing error must be between 0 and 1." << std::endl;
+      return 1;
+    }
+    //std::cout << "Sequencing error = " << seq_error << std::endl;
+
+    // default: no sequencing error
+    if (seq_error == 0.0)
+    {
+      // print frequencies on file
+      for (const auto& el : tree.freq_mutations)
+    {
+       //std::cout << "el=" << el << "\t";
+       file_out_freqs << el << std::endl;
+     }
+    }
+
+    // sequencing error
+    else {
+      // for integers histogram (== histogram of k reads)
+      tree.compute_frequencies_int(engine, r, frequencies_sampling, zeros, mut_bases_error);
+
+      // for standard (frequencies) histogram
+      //tree.compute_frequencies(engine, r, frequencies_sampling, zeros, mut_bases_error);
+      //std::cout << "Sequencing error = " << seq_error << std::endl;
+      // print frequencies on file
+      for (const auto& el : frequencies_sampling) {
+        //std::cout << "el=" << el << "\t";
+        file_out_freqs << el << std::endl;
+      }
+    }
+    
+
+    //delete r;
+    //delete &frequencies_sampling;
+    //delete &zeros;
+    //delete &mut_bases_error;
+
     //std::cout << "Test 1" << std::endl;
 
-    for (const auto& el : tree.freq_mutations)
-    {
-      //std::cout << "el=" << el << "\t";
-      file_out_freqs << el << std::endl;
-    }
+  
     
     file_out_nodes << tree.get_survived_nodes() << std::endl;
 

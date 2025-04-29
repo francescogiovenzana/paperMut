@@ -359,15 +359,26 @@ public:
   double generate_death_prob (char type, double p0, double p1, std::mt19937 &engine) 
   {
     double death_prob = 0;
-    if (type == 'C')
+    if (type == 'C') // Constant 
     {
       death_prob = generate_death_prob_constant(p0);
     }
-    else if (type == 'U')
+    else if (type == 'U') // Uniform pdf
     {
       death_prob = generate_death_prob_uniform(p0, p1, engine);
     }
-    else
+
+    else if (type == 'G') // Gaussian pdf
+    {
+      death_prob = generate_death_prob_gaussian(p0, p1, engine);
+    }
+    // else if (type == 'E') // Exponential pdf
+    // {
+    //   std::exponential_distribution<double> dis(p0);
+    //   death_prob = dis(engine);
+    // }
+
+    else 
     {
       std::cerr << "Error: Death probability type not recognized. Exit." << std::endl;
       exit(1);
@@ -377,9 +388,11 @@ public:
   
   // Single value extracted from a uniform pdf
   // Which raises the idea that the death_prob should be taken by the tree in terms of parameters: type, p0, p1
-  double generate_death_prob_uniform(double lower_bound, double upper_bound, std::mt19937 &engine) // I'm not sure this is proper sintax
+  double generate_death_prob_uniform(double mean, double variance, std::mt19937 &engine) // I'm not sure this is proper sintax
   {
     size_t attempts = max_node_index; 
+    double lower_bound = mean - sqrt(3*variance);
+    double upper_bound = mean + sqrt(3*variance);
     std::uniform_real_distribution<double> dis(lower_bound, upper_bound);
     double death_prob = dis(engine);
     return death_prob;
@@ -388,6 +401,32 @@ public:
   double generate_death_prob_constant(double p0)
   {
     return p0;
+  }
+
+  double generate_death_prob_gaussian(double mean, double variance, std::mt19937 &engine)
+  {
+    std::normal_distribution<double> dis(mean, sqrt(variance));
+    death_prob = dis(engine);
+
+    // this is a possible alternative
+    // if (death_prob < 0.0)
+    // {
+    //   death_prob = 0.0;
+    // }
+    // else if (death_prob > 1.0)
+    // {
+    //   death_prob = 1.0;
+    // }
+    // return death_prob;
+    // std::normal_distribution<double> dis(mean, sqrt(variance));
+    // double death_prob = dis(engine);
+    
+    // forcing normalization
+    if (death_prob < 0.0 || death_prob > 1.0)
+    {
+      death_prob = generate_death_prob_gaussian(mean, variance, engine);
+    }
+    return death_prob;
   }
 
 
@@ -644,10 +683,6 @@ public:
         //count_mutations += 1;
         //std::cout << "True frequency = " << frequency << std::endl;
       }
-      // Test print: --implem FG 21/02/25
-      //if (i%10 == 0) {
-      //  std::cout << "i =" << i << std::endl;
-      //}
     }
   }
 
@@ -671,16 +706,19 @@ public:
 
   size_t sampling_coverage(std::mt19937 &engine, double frequency, bool set_ploidy)
   {
+    // coverage == M ???
     size_t coverage_p = coverage;
     if (set_ploidy == true)
     {
       coverage_p = coverage / ploidy;
     } 
+    //                 output = #successes          #trials, p (probability of success) 
     std::binomial_distribution<long unsigned> bd(coverage_p, frequency);
     size_t cov = bd(engine); 
     return cov;
   }
 
+  // is this an older version?
   int sampling_C(std::mt19937 &engine, double frequency, size_t coverage)
   { 
     std::binomial_distribution<long unsigned> bd(coverage, frequency);
@@ -688,9 +726,13 @@ public:
     return cov;
   }
 
+  
   size_t sampling_coverage_ploidy(std::mt19937 &engine, double frequency, double pp,  bool set_ploidy)
   {
     double freq_p = frequency/pp;
+    //std::cout << "Test test test" << std::endl;
+    //freq_p = 1.0/100;
+     //              output = #successes          #trials, p (probability of success) 
     std::binomial_distribution<long unsigned> bd(coverage, freq_p);
     size_t cov = bd(engine); 
     return cov;
@@ -703,14 +745,14 @@ public:
     return n_false_negative;
   }
 
-  size_t set_false_positive(std::mt19937 &engine, size_t r_1, bool set_ploidy, size_t pp)
+  size_t set_false_positive(std::mt19937 &engine, size_t r_1, bool set_ploidy ,size_t pp)
   {
     std::binomial_distribution<long unsigned> bd(coverage - r_1, seq_error);
     size_t n_false_positive = bd(engine);  
     return n_false_positive;
   }
 
-  // Here starts the sequencing part
+
 
   size_t error_no_mut_bases(std::mt19937 &engine, const double &e)
   {
@@ -721,59 +763,102 @@ public:
     return c;
   }
 
-  void sequencing_err_not_mutated_bases(const gsl_rng *r, double pp, 
-                                        bool set_ploidy, size_t n_zeros,
-                                        std::vector<size_t> &mut_bases_error)
-  {    
+//   /*void sequencing_err_not_mutated_bases(const gsl_rng *r, double pp, 
+//                                         bool set_ploidy, size_t n_zeros,
+//                                         std::vector<size_t> &mut_bases_error)
+//   {    
+//     std::cout << "*** TESTING sequencing_err_not_mutated_bases ***" << std::endl;
+//     double vec_pr[coverage];
+//     for (size_t i = 0; i < coverage; ++i)
+//     { 
+//       double pr = gsl_ran_binomial_pdf(i, seq_error, coverage);
+//       vec_pr[i] = pr;
+//       std::cout << "vec_pr[" << i << "] = " << vec_pr[i] << std::endl;
+//     }
+//     double sum_pr = 0.0;
+//     for (size_t i = 0; i < coverage; ++i)
+//     { 
+// +       sum_pr += vec_pr[i];
+// +    }
+// +   for (size_t i = 0; i < coverage; ++i) {
+// +        vec_pr[i] /= sum_pr;
+// +   }
+    
+//     unsigned int vec_values[coverage];
+    
+//     gsl_ran_multinomial(r, coverage, n_zeros, vec_pr, vec_values);
+//     // const gsl_rng *r, size_t K, unsigned int N, const double p[], unsigned int n[]
+//     std::cout << "in_function_test" << std::endl;
+//     for (size_t i = 0; i < coverage; ++i)
+//     {
+//       mut_bases_error[i] += static_cast<size_t>(vec_values[i]);
+//     }
+//   }*/
+  void sequencing_err_not_mutated_bases(const gsl_rng *r, double pp,
+    bool set_ploidy, size_t n_zeros,
+    std::vector<size_t> &mut_bases_error)
+{
+//std::cout << "*** TESTING sequencing_err_not_mutated_bases ***" << std::endl;
 
-    double vec_pr[coverage];
-    for (size_t i = 0; i < coverage; ++i)
-    { 
-      double pr = gsl_ran_binomial_pdf(i, seq_error, coverage);
-      vec_pr[i] = pr;
-    }
+double vec_pr[coverage];
+double sum_pr = 0.0;
 
-    unsigned int vec_values[coverage];
-    gsl_ran_multinomial(r, coverage, n_zeros, vec_pr, vec_values);
-  
-    for (size_t i = 0; i < coverage; ++i)
+// Compute binomial probabilities and their sum
+for (size_t i = 0; i < coverage; ++i)
+{
+double pr = gsl_ran_binomial_pdf(i, seq_error, coverage);
+vec_pr[i] = pr;
+sum_pr += pr;
+
+//std::cout << "vec_pr[" << i << "] = " << pr << std::endl;
+}
+
+// Normalize the probabilities to make them a proper distribution
+for (size_t i = 0; i < coverage; ++i)
+{
+vec_pr[i] /= sum_pr;
+// Optional: Print normalized values
+//std::cout << "normalized vec_pr[" << i << "] = " << vec_pr[i] << std::endl;
+}
+
+// Additional logic to populate mut_bases_error can go here,
+// depending on your downstream usage of vec_pr and random sampling
+}
+
+  void parameters_control(std::mt19937 &engine)
+  {
+    set_mutations(engine);
+    for (const auto& f : freq_mutations)
     {
-      mut_bases_error[i] += static_cast<size_t>(vec_values[i]);
-  //  }
-  //}
+      size_t pp = ploidy_poisson(engine);
+      size_t r_1 = sampling_coverage_ploidy(engine, f, pp, true);
+      while (r_1 <= 0)
+      {
+        r_1 = sampling_coverage_ploidy(engine, f, pp, true);
+      }
 
-  //void parameters_control(std::mt19937 &engine)
-  //{
+      double f_tot = static_cast<double>(r_1) * 
+                     static_cast<double>(pp) *
+                     (1.0/static_cast<double>(coverage));
+     
+      
+      threshold = (1.0 / static_cast<double>(survived_nodes)) + 
+                  (K * (1.0 / std::sqrt(static_cast<double>(survived_nodes))) * 
+                  (1.0/std::sqrt(static_cast<double>(coverage)/static_cast<double>(pp))));
+      //if (f_tot > 0.0)
+      if (f_tot >= threshold && f_tot < 1.0)
+      {
+        count_mutations += 1;
+      }
+    }
+  }
+
+
+  // NOT IN USE!!!
+  // void compute_mutations(std::mt19937 &engine)
+  // {
   //  set_mutations(engine);
-  //  for (const auto& f : freq_mutations)
-  //  {
-  //    size_t pp = ploidy_poisson(engine);
-  //    size_t r_1 = sampling_coverage_ploidy(engine, f, pp, true);
-  //    while (r_1 <= 0)
-  //    {
-  //      r_1 = sampling_coverage_ploidy(engine, f, pp, true);
-  //    }
-
-  //    double f_tot = static_cast<double>(r_1) * 
-  //                   static_cast<double>(pp) *
-  //                   (1.0/static_cast<double>(coverage));
-  //   
-  //    
-  //    threshold = (1.0 / static_cast<double>(survived_nodes)) + 
-  //                (K * (1.0 / std::sqrt(static_cast<double>(survived_nodes))) * 
-  //                (1.0/std::sqrt(static_cast<double>(coverage)/static_cast<double>(pp))));
-  //    //if (f_tot > 0.0)
-  //    if (f_tot >= threshold && f_tot < 1.0)
-  //    {
-  //      count_mutations += 1;
-  //    }
-  //  }
-  //}
-
-  //void compute_mutations(std::mt19937 &engine)
-  //{
-  //  set_mutations(engine);
-  //  for (const auto& f : freq_mutations)
+  //  for (auto& f : freq_mutations)
   //  {
   //      size_t r_1 = sampling_coverage(engine, f, true);
 
@@ -790,19 +875,27 @@ public:
   //      }
   //      //size_t r_3 = 0;
   //      //std::cout << "R3 = " << r_3 << std::endl;
-  //      
+       
   //      double f_tot = static_cast<double>(r_1 - r_2 + r_3) * 
   //                     static_cast<double>(ploidy) *
-  //                     (1.0/static_cast<double>(coverage));
+  //                     (1.0/static_cast<double>(coverage)); // this one is just normalization
 
-  //      threshold = (1.0 / static_cast<double>(survived_nodes)) + 
-  //                  (K * (1.0 / std::sqrt(static_cast<double>(survived_nodes))) * 
-  //                  (1.0/std::sqrt(static_cast<double>(coverage)/static_cast<double>(ploidy))));
+  //     // threshold = 1/N + K/sqrt(N) * 1/(sqrt(cov/ploidy)) --> where does it come from??? (check in paper)
+  //      //threshold = (1.0 / static_cast<double>(survived_nodes)) + 
+  //      //            (K * (1.0 / std::sqrt(static_cast<double>(survived_nodes))) * 
+  //      //            (1.0/std::sqrt(static_cast<double>(coverage)/static_cast<double>(ploidy))));
+
+  //      // test test test 
+  //       threshold = 1./static_cast<double>(coverage);
+  //      //std::cout << "Threshold = " << threshold << std::endl;
 
   //      //if (f_tot > 0.0)
   //      if (f_tot >= threshold && f_tot < 1.0)
   //      {
-  //        count_mutations += 1;
+  //       std::cout << "Frequency = " << f << std::endl;
+  //       f = f_tot;
+  //        //count_mutations += 1; // pending problem: what does it mean I'm counting mutations? 
+  //        // It doesn't armonize with the existing code. 
   //      }
   //  }
 
@@ -812,17 +905,17 @@ public:
   //    count_err = error_no_mut_bases(engine, threshold);
   //  }
   //  count_mutations += count_err; 
-  //}
+  // }
 
 
-  //void compute_mutation_new(std::mt19937 &engine, const size_t &e)
-  //{
+  // void compute_mutation_new(std::mt19937 &engine, const size_t &e)
+  // {
   //  count_mutations = 0;
-  //  //double thr = (1.0/static_cast<double>(e)) + (K/std::sqrt(static_cast<double>(coverage)/static_cast<double>(ploidy)))*std::sqrt(1.0/static_cast<double>(e));
+  //  double thr = (1.0/static_cast<double>(e)) + (K/std::sqrt(static_cast<double>(coverage)/static_cast<double>(ploidy)))*std::sqrt(1.0/static_cast<double>(e));
   //  double thr = ((1.0/static_cast<double>(e))*static_cast<double>(ploidy)) + (K/std::sqrt(static_cast<double>(coverage)/static_cast<double>(ploidy)))*std::sqrt(1.0/static_cast<double>(e));
   //  for (const auto& f : freq_mutations) 
   //  { 
-  //    //size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(ploidy), true);
+  //    size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(ploidy), true);
   //    size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(ploidy), false);
 
   //    size_t r_2 = 0.0;
@@ -840,9 +933,9 @@ public:
   //    double f_hat = static_cast<double>(r_1-r_2+r_3) * 
   //                   static_cast<double>(ploidy) *
   //                   (1.0/static_cast<double>(coverage));
-  //     
-  //    //if (f_hat >= thr)
-  //    //if ((f_hat >= thr) && (f_hat < 0.99))
+      
+  //    if (f_hat >= thr)
+  //    if ((f_hat >= thr) && (f_hat < 0.99))
   //    if (f_hat > 0.0)
   //    {
   //      count_mutations += 1;
@@ -855,63 +948,133 @@ public:
   //    count_err = error_no_mut_bases(engine, static_cast<double>(e));
   //  }
   //  count_mutations += count_err; 
-  //}
+  // }
 
-  //void compute_frequencies(std::mt19937 &engine, const gsl_rng *r, 
-  //                         std::vector<double> &frequencies_sampling, 
-  //                         std::vector<size_t> &zeros, 
-  //                         std::vector<size_t> &mut_bases_error)
-  //{ 
-  //  //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
-  //  //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
-  //  //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+  // This function counts Relative frequencies (# of mutations read 1, 2, ... k ..., M times)
+  void compute_frequencies(std::mt19937 &engine, const gsl_rng *r, 
+                          std::vector<double> &frequencies_sampling, 
+                          std::vector<size_t> &zeros, 
+                          std::vector<size_t> &mut_bases_error)
+  { 
+   //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+   //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+   //std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 
-  //  std::vector<double> f_hat_zeros;
-  //  for (const auto& f : freq_mutations) 
-  //  {
+   std::vector<double> f_hat_zeros;
+   for (const auto& f : freq_mutations) 
+   {
 
-  //    //size_t pp = ploidy_poisson(engine);
-  //    size_t pp = ploidy;
-  //    //std::cout << "True frequency = " << f << std::endl;
-  //    size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(pp), false);
+     //size_t pp = ploidy_poisson(engine);
+     size_t pp = ploidy;
+     //std::cout << "True frequency = " << f << std::endl;
+     size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(pp), false);
 
-  //    //std::cout << "Coverage sampling = " << r_1 << std::endl;
-  //    size_t r_2 = 0.0;
-  //    if (seq_error > 0.0)
-  //    { 
-  //      r_2 = set_false_negative(engine, r_1);
-  //    }
+     //std::cout << "Coverage sampling = " << r_1 << std::endl;
+     size_t r_2 = 0.0;
+     if (seq_error > 0.0)
+     { 
+       r_2 = set_false_negative(engine, r_1);
+     }
 
-  //    //std::cout << "False negative = " << r_2 << std::endl;
-  //    size_t r_3 = 0.0;
-  //    if (seq_error > 0.0)
-  //    { 
-  //      r_3 = set_false_positive(engine, r_1, false, pp);
-  //    }
+     //std::cout << "False negative = " << r_2 << std::endl;
+     size_t r_3 = 0.0;
+     if (seq_error > 0.0)
+     { 
+       r_3 = set_false_positive(engine, r_1, false, pp);
+     }
 
-  //    //std::cout << "False positive = " << r_3 << std::endl;
-  //    double f_hat = static_cast<double>(r_1-r_2+r_3) * 
-  //                   static_cast<double>(pp) *
-  //                   (1.0/static_cast<double>(coverage));
+     //std::cout << "False positive = " << r_3 << std::endl;
+     double f_hat = static_cast<double>(r_1-r_2+r_3) * 
+                   static_cast<double>(pp) *
+                   (1.0/static_cast<double>(coverage));
+     //double f_hat = static_cast<double>(r_1-r_2+r_3) * static_cast<double>(pp);
+     //double f_hat = static_cast<double>(r_1-r_2+r_3);
 
-  //    //std::cout << "F_HAT = " << f_hat << std::endl;
-  //    //if ((f_hat > 0.0) && (f_hat < 0.99))
-  //    if (f_hat > 0.0)
-  //    {
-  //      //frequencies_sampling.push_back(f_hat);
-  //      frequencies_sampling.push_back(static_cast<double>(r_1-r_2+r_3));
-  //    }
+     //std::cout << "F_HAT = " << f_hat << std::endl;
+     //if ((f_hat > 0.0) && (f_hat < 0.99))
+     if (f_hat > 0.0)
+     {
+      //std::cout << "f_def=" << f_hat << std::endl;
+      frequencies_sampling.push_back(f_hat);
+       //std::cout << "f_def=" << static_cast<double>(r_1-r_2+r_3) << std::endl;
+       //frequencies_sampling.push_back(static_cast<double>(r_1-r_2+r_3));
+     }
 
-  //    if (std::abs(f_hat) <= 0.0)
-  //    {
-  //      f_hat_zeros.push_back(f_hat);
-  //    }
-  //  }
-  //  
-  //  size_t z = get_not_mutated_bases(f_hat_zeros.size());
-  //  zeros.push_back(z);
-  //  sequencing_err_not_mutated_bases(r, static_cast<double>(ploidy), false, z, mut_bases_error);
-  //}
+     if (std::abs(f_hat) <= 0.0)
+     {
+       //std::cout << "test zeros" << std::endl;
+       f_hat_zeros.push_back(f_hat);
+     }
+   }
+   
+   size_t z = get_not_mutated_bases(f_hat_zeros.size());
+   zeros.push_back(z);
+   //std::cout << "test" << std::endl;
+   sequencing_err_not_mutated_bases(r, static_cast<double>(ploidy), false, z, mut_bases_error);
+  }
+
+   // This function counts Absolute frequencies (# of mutations read 1, 2, ... k ..., M times)
+   void compute_frequencies_int(std::mt19937 &engine, const gsl_rng *r, 
+    std::vector<double> &frequencies_sampling, 
+    std::vector<size_t> &zeros, 
+    std::vector<size_t> &mut_bases_error)
+{ 
+//std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+//std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+//std::cout << "////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+
+std::vector<double> f_hat_zeros;
+for (const auto& f : freq_mutations) 
+{
+
+//size_t pp = ploidy_poisson(engine);
+size_t pp = ploidy;
+//std::cout << "True frequency = " << f << std::endl;
+size_t r_1 = sampling_coverage_ploidy(engine, f, static_cast<double>(pp), false);
+
+//std::cout << "Coverage sampling = " << r_1 << std::endl;
+size_t r_2 = 0.0;
+if (seq_error > 0.0)
+{ 
+r_2 = set_false_negative(engine, r_1);
+}
+
+//std::cout << "False negative = " << r_2 << std::endl;
+size_t r_3 = 0.0;
+if (seq_error > 0.0)
+{ 
+r_3 = set_false_positive(engine, r_1, false, pp);
+}
+
+//std::cout << "False positive = " << r_3 << std::endl;
+double f_hat = static_cast<double>(r_1-r_2+r_3) * 
+static_cast<double>(pp) *
+(1.0/static_cast<double>(coverage));
+//double f_hat = static_cast<double>(r_1-r_2+r_3) * static_cast<double>(pp);
+//double f_hat = static_cast<double>(r_1-r_2+r_3);
+
+//std::cout << "F_HAT = " << f_hat << std::endl;
+//if ((f_hat > 0.0) && (f_hat < 0.99))
+if (f_hat > 0.0)
+{
+//std::cout << "f_def=" << f_hat << std::endl;
+//frequencies_sampling.push_back(f_hat);
+//std::cout << "f_def=" << static_cast<double>(r_1-r_2+r_3) << std::endl;
+frequencies_sampling.push_back(static_cast<double>(r_1-r_2+r_3));
+}
+
+if (std::abs(f_hat) <= 0.0)
+{
+//std::cout << "test zeros" << std::endl;
+f_hat_zeros.push_back(f_hat);
+}
+}
+
+size_t z = get_not_mutated_bases(f_hat_zeros.size());
+zeros.push_back(z);
+//std::cout << "test" << std::endl;
+sequencing_err_not_mutated_bases(r, static_cast<double>(ploidy), false, z, mut_bases_error);
+}
 
   //void compute_mutation_new_k(std::mt19937 &engine, const size_t &e, const double &k_)
   //{
@@ -1053,22 +1216,25 @@ public:
   //  return mr_est;
   //}
 
-  //long double mr_estimator_base()
-  //{
+  // long double mr_estimator_base()
+  // {
   //  long double mr_est = -std::log(1.0 - (static_cast<long double>(count_mutations)/ 
   //                                 static_cast<long double>(n_bases)))/static_cast<long double>(max_node_index);
   //  //std::cout << "mr = " << mr_est << "count mutations = " << count_mutations << std::endl;;
   //  return mr_est;
-  //}
+  // }
 
-  //void mr_estimator_no_ret()
-  //{
+  // void mr_estimator_no_ret()
+  // {
   //  count_all_alive();
   //  //std::cout << "All alive = " << all_alive << std::endl;
   //  long double mr_est = -std::log(1.0 - (static_cast<long double>(count_mutations)/ 
   //                                 static_cast<long double>(n_bases)))/static_cast<long double>(all_alive);
   //  //std::cout << "mr = " << mr_est << "count mutations = " << count_mutations << std::endl;;
-  //}
+  // }
+
+
+  // End of sequencing part
 
   void print_tree(std::ostream &out = std::cout) const
   {
